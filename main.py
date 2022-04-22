@@ -1,33 +1,32 @@
-import cv2 as cv
+import cv2
 import numpy as np
 
 cap = cv2.VideoCapture(0)
 
-acorn = cv.imread('acorn_red.jpg')
+acorn = cv2.imread('acorn_red.jpg')
+wall = cv2.imread('wall.jpg')
 
-h_bins = 50
-s_bins = 60
-histSize = [h_bins, s_bins]
-h_ranges = [0, 180]
-s_ranges = [0, 256]
-ranges = h_ranges + s_ranges
-channels = [0, 1]
+def cross (frame, x, y, r, g, b, s):
+    frame = cv2.line(frame, (int(x), 0), (int(x), 2000), (b, g, r), s)
+    frame = cv2.line(frame, (0, int(y)), (2000, int(y)), (b, g, r), s)
 
 while (1):
     ret, frame = cap.read()
     
-    if not ret:
-        break
+    acorn_res = cv2.matchTemplate(frame, acorn, cv2.TM_CCOEFF_NORMED)
+    wall_res = cv2.matchTemplate(frame, wall, cv2.TM_CCOEFF_NORMED)
+    
+    threshold = .8
+    
+    acorn_loc = np.where(acorn_res >= threshold)
+    wall_loc = np.where(wall_res >= threshold)
+    
+    for pt in zip(*acorn_loc[::-1]):
+        cross(frame, pt[0], pt[1], 255, 0, 0, 2)
         
-    hsv_base = cv.cvtColor(base, cv.COLOR_BGR2HSV)
-    hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-    
-    hist_acorn = cv.calcHist([hsv_acorn], channels, None, histSize, ranges, accumulate=False)
-    cv.normalize(hist_acorn, hist_acorn, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
-    
-    hist_frame = cv.calcHist([hsv_frame], channels, None, histSize, ranges, accumulate=False)
-    cv.normalize(hist_frame, hist_frame, alpha=0, beta=1, norm_type=cv.NORM_MINMAX)
-    
-    frame_acorn = cv.compareHist(hist_acorn, hist_frame, compare_method)
+    for pt in zip(*wall_loc[::-1]):
+        cross(frame, pt[0], pt[1], 100, 100, 100, 2)
+
+    cv2.imshow('frame', frame)
     
     cv2.waitKey(1)
